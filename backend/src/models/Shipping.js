@@ -1,39 +1,34 @@
 /**
  * 国际物流模型
- * 用于存储物流公司、物流单号、物流状态等信息
  */
 
 const mongoose = require('mongoose');
 
-// 物流状态历史记录模式
-const trackingHistorySchema = new mongoose.Schema({
-  // 状态时间
+/**
+ * 物流状态历史记录模式
+ */
+const statusHistorySchema = new mongoose.Schema({
+  status: {
+    type: String,
+    required: true,
+    enum: ['pending', 'in_transit', 'delivered', 'exception', 'returned']
+  },
   timestamp: {
     type: Date,
-    required: true,
     default: Date.now
   },
-  // 状态描述
-  description: {
+  note: {
     type: String,
-    required: true
-  },
-  // 状态位置
-  location: {
-    type: String,
-    required: false
-  },
-  // 状态代码
-  statusCode: {
-    type: String,
-    required: false
+    default: ''
   }
 });
 
-// 国际物流模式
+/**
+ * 国际物流模式
+ */
 const shippingSchema = new mongoose.Schema({
   // 关联订单ID
-  orderId: {
+  order: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
     required: true
@@ -42,60 +37,84 @@ const shippingSchema = new mongoose.Schema({
   carrier: {
     type: String,
     required: true,
-    enum: ['DHL', 'UPS', 'FedEx', 'TNT', '17Track', '菜鸟', '云途', '其他']
+    trim: true
   },
   // 物流单号
   trackingNumber: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   // 物流状态
   status: {
     type: String,
     required: true,
-    enum: ['pending', 'in_transit', 'out_for_delivery', 'delivered', 'exception', 'returned', 'unknown'],
+    enum: ['pending', 'in_transit', 'delivered', 'exception', 'returned'],
     default: 'pending'
   },
+  // 状态历史记录
+  statusHistory: [statusHistorySchema],
   // 发货日期
   shippedDate: {
     type: Date,
-    required: true,
     default: Date.now
   },
   // 预计送达日期
   estimatedDeliveryDate: {
     type: Date,
-    required: false
+    default: null
   },
   // 实际送达日期
   deliveredDate: {
     type: Date,
-    required: false
+    default: null
   },
-  // 物流跟踪历史
-  trackingHistory: [trackingHistorySchema],
-  // 物流备注
+  // 跟踪历史
+  trackingHistory: [
+    {
+      timestamp: {
+        type: Date,
+        required: true
+      },
+      description: {
+        type: String,
+        required: true
+      },
+      location: {
+        type: String,
+        default: ''
+      },
+      statusCode: {
+        type: String,
+        default: 'unknown'
+      }
+    }
+  ],
+  // 备注
   notes: {
     type: String,
-    required: false
+    default: ''
   },
-  // 物流API响应原始数据
-  rawApiResponse: {
+  // 原始API响应
+  apiResponse: {
     type: mongoose.Schema.Types.Mixed,
-    required: false
+    default: null
   },
   // 最后更新时间
   lastUpdated: {
     type: Date,
     default: Date.now
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 // 创建索引
-shippingSchema.index({ orderId: 1 });
+shippingSchema.index({ order: 1 }, { unique: true });
 shippingSchema.index({ trackingNumber: 1 });
 shippingSchema.index({ carrier: 1 });
 shippingSchema.index({ status: 1 });
+shippingSchema.index({ shippedDate: 1 });
 
 // 更新最后更新时间的中间件
 shippingSchema.pre('save', function(next) {
