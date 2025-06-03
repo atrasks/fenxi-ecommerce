@@ -4,65 +4,72 @@
 
 const express = require('express');
 const router = express.Router();
-const shippingController = require('../controllers/shippingController');
-const { isAuth, isAdmin } = require('../middlewares/auth');
+const { 
+  getOrderShipping, 
+  getTrackingInfo, 
+  refreshTrackingInfo,
+  addShipping,
+  updateShipping,
+  addTrackingEvent,
+  getAllShippings,
+  getShippingStats
+} = require('../controllers/shippingController');
+const { protect, admin } = require('../middleware/authMiddleware');
 
 /**
- * @route   GET /api/shipping/tracking/:trackingNumber
- * @desc    获取物流跟踪信息（通过物流单号）
- * @access  Public
- */
-router.get('/tracking/:trackingNumber', (req, res) => {
-  res.status(200).json({ message: '物流跟踪信息查询功能正在开发中' });
-});
-
-/**
- * @route   GET /api/shipping/orders/:orderId/tracking
- * @desc    获取订单的物流跟踪信息
+ * @route   GET /api/shipping/order/:orderId
+ * @desc    获取订单的物流信息
  * @access  Private
  */
-router.get('/orders/:orderId/tracking', isAuth, shippingController.getShippingTracking);
+router.get('/order/:orderId', protect, getOrderShipping);
 
 /**
- * @route   POST /api/shipping/orders/:orderId/tracking
- * @desc    添加订单物流信息（管理员）
- * @access  Admin
+ * @route   GET /api/shipping/track/:trackingNumber
+ * @desc    获取物流跟踪信息
+ * @access  Private
  */
-router.post('/orders/:orderId/tracking', isAuth, isAdmin, shippingController.addShipping);
+router.get('/track/:trackingNumber', protect, getTrackingInfo);
 
 /**
- * @route   PUT /api/shipping/orders/:orderId/tracking
- * @desc    更新订单物流信息（管理员）
- * @access  Admin
+ * @route   POST /api/shipping
+ * @desc    管理员添加物流信息
+ * @access  Private/Admin
  */
-router.put('/orders/:orderId/tracking', isAuth, isAdmin, shippingController.updateShipping);
+router.post('/', protect, admin, addShipping);
 
 /**
- * @route   POST /api/shipping/orders/:orderId/tracking/events
- * @desc    添加物流跟踪事件（管理员）
- * @access  Admin
+ * @route   PUT /api/shipping/:shippingId
+ * @desc    管理员更新物流信息
+ * @access  Private/Admin
  */
-router.post('/orders/:orderId/tracking/events', isAuth, isAdmin, shippingController.addTrackingRecord);
+router.put('/:shippingId', protect, admin, updateShipping);
 
 /**
- * @route   GET /api/shipping/admin/all
- * @desc    获取所有物流信息（管理员）
- * @access  Admin
+ * @route   POST /api/shipping/:shippingId/events
+ * @desc    管理员添加物流跟踪事件
+ * @access  Private/Admin
  */
-router.get('/admin/all', isAuth, isAdmin, shippingController.getAllShipping);
+router.post('/:shippingId/events', protect, admin, addTrackingEvent);
 
 /**
- * @route   GET /api/shipping/admin/stats
- * @desc    获取物流统计信息（管理员）
- * @access  Admin
+ * @route   GET /api/shipping
+ * @desc    管理员获取所有物流信息
+ * @access  Private/Admin
  */
-router.get('/admin/stats', isAuth, isAdmin, shippingController.getShippingStats);
+router.get('/', protect, admin, getAllShippings);
 
 /**
- * @route   POST /api/shipping/refresh/:trackingNumber
- * @desc    从第三方API刷新物流信息
- * @access  Admin
+ * @route   GET /api/shipping/stats
+ * @desc    管理员获取物流统计信息
+ * @access  Private/Admin
  */
-router.post('/refresh/:trackingNumber', isAuth, isAdmin, shippingController.refreshShippingTracking);
+router.get('/stats', protect, admin, getShippingStats);
+
+/**
+ * @route   PUT /api/shipping/:shippingId/refresh
+ * @desc    刷新物流信息
+ * @access  Private
+ */
+router.put('/:shippingId/refresh', protect, refreshTrackingInfo);
 
 module.exports = router;
